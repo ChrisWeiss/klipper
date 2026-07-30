@@ -46,6 +46,8 @@ class VirtualSD:
             desc=self.cmd_SDCARD_PRINT_FILE_help)
         self.printer.register_event_handler("klippy:analyze_shutdown",
                                             self._handle_analyze_shutdown)
+        self.printer.register_event_handler("gcode:debuginput_exit",
+                                            self._handle_debuginput_exit)
     def _handle_analyze_shutdown(self, msg, details):
         if self.work_timer is not None:
             self.must_pause_work = True
@@ -60,6 +62,9 @@ class VirtualSD:
             logging.info("Virtual sdcard (%d): %s\nUpcoming (%d): %s",
                          readpos, repr(data[:readcount]),
                          self.file_position, repr(data[readcount:]))
+    def _handle_debuginput_exit(self):
+        # When in batch debugging mode, wait until sdcard idle before exiting
+        return self.work_timer is None
     def stats(self, eventtime):
         if self.work_timer is None:
             return False, ""

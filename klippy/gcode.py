@@ -429,6 +429,16 @@ class GCodeIO:
         self.is_printer_ready = False
         if self.is_fileinput:
             self.printer.request_exit('error_exit')
+    def _do_debuginput_exit(self):
+        eventtime = self.reactor.monotonic()
+        while 1:
+            eventtime = self.reactor.pause(eventtime + 0.010)
+            if self.is_processing_data:
+                continue
+            res = self.printer.send_event('gcode:debuginput_exit')
+            if all(res):
+                break
+        self.gcode.request_restart('exit')
     m112_r = re.compile(r'^(?:[nN][0-9]+)?\s*[mM]112(?:\s|$)')
     def _process_data(self, eventtime):
         # Read input, separate by newline, and add to pending_commands
@@ -447,11 +457,10 @@ class GCodeIO:
         self.pipe_is_active = True
         # Special handling for debug file input EOF
         if not data and self.is_fileinput:
-            if not self.is_processing_data:
-                self.reactor.unregister_fd(self.fd_handle)
-                self.fd_handle = None
-                self.gcode.request_restart('exit')
-            pending_commands.append("")
+            self.reactor.unregister_fd(self.fd_handle)
+            self.fd_handle = None
+            self._do_debuginput_exit()
+            return
         # Handle case where multiple commands pending
         if len(pending_commands) < 20:
             # Check for M112 out-of-order
