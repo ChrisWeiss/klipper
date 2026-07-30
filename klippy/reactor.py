@@ -320,7 +320,9 @@ class SelectReactor:
         # High latency detected - invoke callback
         prev_cbs = self._recent_callbacks
         self._recent_callbacks = [self._latency_callback]
+        self._prevent_pause_count += 1
         self._latency_callback(eventtime, prev_eventtime, prev_cbs)
+        self._prevent_pause_count -= 1
         return True
     # Main loop
     def _dispatch_loop(self):
@@ -331,7 +333,9 @@ class SelectReactor:
             timeout = 0.
             if not busy:
                 self._recent_callbacks.append(self._idle_callback)
+                self._prevent_pause_count += 1
                 busy = self._idle_callback(eventtime, self._start_busy_time)
+                self._prevent_pause_count -= 1
                 if not busy:
                     timeout = min(1., max(.001, self._next_timer - eventtime))
             # Check for file activity
