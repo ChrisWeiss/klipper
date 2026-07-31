@@ -12,7 +12,6 @@
 // clock times, prioritizes commands, and handles retransmissions.  A
 // background thread is launched to do this work and minimize latency.
 
-#include <linux/can.h> // // struct can_frame
 #include <math.h> // fabs
 #include <pthread.h> // pthread_mutex_lock
 #include <stddef.h> // offsetof
@@ -22,6 +21,17 @@
 #include <string.h> // memset
 #include <termios.h> // tcflush
 #include <unistd.h> // pipe
+#ifdef __linux__
+#include <linux/can.h> // struct can_frame
+#else
+// Minimal stub so UART serialqueue builds on non-Linux hosts (e.g. macOS).
+// CAN fd mode is not supported outside Linux.
+struct can_frame {
+    uint32_t can_id;
+    uint8_t can_dlc;
+    uint8_t data[8];
+};
+#endif
 #include "compiler.h" // __visible
 #include "list.h" // list_add_tail
 #include "msgblock.h" // message_alloc

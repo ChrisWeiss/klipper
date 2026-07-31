@@ -11,11 +11,19 @@ import cffi
 # c_helper.so compiling
 ######################################################################
 
+import sys
+
 GCC_CMD = "gcc"
-COMPILE_ARGS = ("-Wall -g -O2 -shared -fPIC"
-                " -flto -fwhole-program -fno-use-linker-plugin"
-                " -o %s %s")
-SSE_FLAGS = "-mfpmath=sse -msse2"
+if sys.platform == 'darwin':
+    # Apple clang: drop GCC-only LTO flags; allow unresolved Python symbols.
+    COMPILE_ARGS = ("-Wall -g -O2 -shared -fPIC -undefined dynamic_lookup"
+                    " -o %s %s")
+    SSE_FLAGS = ""
+else:
+    COMPILE_ARGS = ("-Wall -g -O2 -shared -fPIC"
+                    " -flto -fwhole-program -fno-use-linker-plugin"
+                    " -o %s %s")
+    SSE_FLAGS = "-mfpmath=sse -msse2"
 SOURCE_FILES = [
     'pyhelper.c', 'serialqueue.c', 'stepcompress.c', 'steppersync.c',
     'itersolve.c', 'trapq.c', 'pollreactor.c', 'msgblock.c', 'trdispatch.c',
@@ -288,7 +296,7 @@ def check_build_c_library():
         # Code already built
         return destlib
     # Select command line options
-    if check_gcc_option(SSE_FLAGS):
+    if SSE_FLAGS and check_gcc_option(SSE_FLAGS):
         cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
     else:
         cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
