@@ -4,3 +4,6 @@ out
 .config
 .config.old
 klippy/.version
+klippy/chelper/c_helper.so
+klippy/chelper/_temp_c_helper.so
+klippy/chelper/*.dSYM/
